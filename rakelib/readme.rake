@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'redcloth'
+#require 'redcloth'
 
 directory "html"
 

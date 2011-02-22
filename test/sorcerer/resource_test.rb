@@ -478,6 +478,7 @@ class SourcerTest < Test::Unit::TestCase
     assert_resource "class X; x; end"
     assert_resource "class X; def f(); end; end"
   end
+    assert_resource 
 
   def test_can_source_class_with_parent
     assert_resource "class X < Y; end"

@@ -34,17 +34,17 @@ BASE_RDOC_OPTIONS = [
 
 task :default => :test
 
-rd = Rake::RDocTask.new("rdoc") do |rdoc|
-  rdoc.rdoc_dir = 'html'
-  rdoc.template = 'doc/jamis.rb'
-  rdoc.title    = "Sorcerer -- Its Like Magic"
-  rdoc.options = BASE_RDOC_OPTIONS.dup
-  rdoc.options << '-SHN' << '-f' << 'darkfish' if defined?(DARKFISH_ENABLED) && DARKFISH_ENABLED
-    
-  rdoc.rdoc_files.include('README.textile')
-  rdoc.rdoc_files.include('lib/**/*.rb', 'doc/**/*.rdoc')
-  rdoc.rdoc_files.exclude(/\bcontrib\b/)
-end
+#rd = Rake::RDocTask.new("rdoc") do |rdoc|
+#  rdoc.rdoc_dir = 'html'
+#  rdoc.template = 'doc/jamis.rb'
+#  rdoc.title    = "Sorcerer -- Its Like Magic"
+#  rdoc.options = BASE_RDOC_OPTIONS.dup
+#  rdoc.options << '-SHN' << '-f' << 'darkfish' if defined?(DARKFISH_ENABLED) && DARKFISH_ENABLED
+#    
+#  rdoc.rdoc_files.include('README.textile')
+#  rdoc.rdoc_files.include('lib/**/*.rb', 'doc/**/*.rdoc')
+#  rdoc.rdoc_files.exclude(/\bcontrib\b/)
+#end
 
 if ! defined?(Gem)
   puts "Package Target requires RubyGEMs"
@@ -58,8 +58,8 @@ else
     EOF
     s.files = PKG_FILES.to_a
     s.require_path = 'lib'                         # Use these for libraries.
-    s.has_rdoc = true
-    s.extra_rdoc_files = rd.rdoc_files.reject { |fn| fn =~ /\.rb$/ }.to_a
+    #s.has_rdoc = true
+    #s.extra_rdoc_files = rd.rdoc_files.reject { |fn| fn =~ /\.rb$/ }.to_a
     s.rdoc_options = BASE_RDOC_OPTIONS
     s.author = "Jim Weirich"
     s.email = "jim.weirich@gmail.com"
