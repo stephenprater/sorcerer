@@ -1,44 +1,40 @@
 #!/usr/bin/env ruby
+require_relative 'handlers_class'
 
-require 'ruby-debug'
-require 'active_support/core_ext'
 require_relative 'handlers'
 
 module Sorcerer
 
-  def Sorcerer.const_missing const
-    puts const
-    debugger
-    1
-  end
-
-  class HandlerClass
-    def extend mod
-      super mod
-      self.singleton_class.constants.each do |c|
-        c_meth = c.to_s.downcase.underscore
-        self.define_singleton_method c_meth.intern do
-          self.singleton_class.const_get c
-        end
-      end
-    end
-  end
-  
   class Resource
-    class NoHandlerError < StandardError
-    end
+    
+    class NoHandlerError < StandardError; end
 
     attr_accessor :statement_seperator
+    attr_accessor :indent, :indent_level
+    attr_accessor :current_expression, :previous_expression
 
-    def initialize(sexp, debug=false)
-      @sexp = sexp
+    def initialize(handler_class = Source, debug=false)
       @source = ''
       @debug = debug
       @word_level = 0
       @indent_level = 0
-      @statement_seperator = ";"
+      @statement_seperator = "; "
       @indent=""
-      @handlers = HandlerClass.new
+      @handlers = handler_class.new(self)
+      @current_expression = nil
+      @previous_expression = nil
+    end
+
+    def handler
+      @handlers
+    end
+
+    def generated_source
+      @source
+    end
+    
+    def generated_source= new_source
+      @source = new_source
     end
 
     def statement_seperator
@@ -49,30 +45,20 @@ module Sorcerer
         @statement_seperator
       end
     end
-    
-    def source
-      @handlers.extend Sorcerer::Handlers
-      resource(@sexp)
-      @source
-    end
-
-    def pretty_source
-      @handlers.extend Sorcerer::PrettyHandlers
-      @statement_seperator = "\n"
-      @indent = "  "
-      resource(@sexp)
-      @source
-    end
 
     def resource(sexp)
       return unless sexp
-      handler = @handlers.handlers[sexp.first]
+      handler = @handlers[sexp]
       raise NoHandlerError.new(sexp.first) unless handler
       if @debug
         puts "----------------------------------------------------------"
         pp sexp
       end
-      handler.call(self, sexp)
+      @previous_expression = @current_expression if @current_expression
+      @current_expression = sexp
+      src = handler.call(self, sexp)
+      @current_expression = @previous_expression
+      src
     end
    
     def opt_parens(sexp)
@@ -82,9 +68,7 @@ module Sorcerer
     
     def emit(string)
       puts "EMITTING '#{string}'" if @debug
-      if @source.end_with? "\n"
-        @source << (@indent * @indent_level)
-      end
+      @handlers.respond_to? :source_notify and @handlers.source_notify(string, @current_expression)
       @source << string.to_s
     end
     
@@ -108,6 +92,7 @@ module Sorcerer
       resource(sexp[1])     # Arguments
       if ! void?(sexp[2])
         #only necessary when we are on the same line with a do.
+        #a hard coded exception
         emit(" ") unless @source.end_with? "\n"
         resource(sexp[2])     # Statements
       end

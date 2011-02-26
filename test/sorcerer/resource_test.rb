@@ -2,7 +2,7 @@
 
 require 'test/unit'
 require 'ripper'
-require 'sorcerer'
+require_relative '../../lib/sorcerer'
 
 class SourcerTest < Test::Unit::TestCase
   def source(string, debug=false)
@@ -478,7 +478,6 @@ class SourcerTest < Test::Unit::TestCase
     assert_resource "class X; x; end"
     assert_resource "class X; def f(); end; end"
   end
-    assert_resource 
 
   def test_can_source_class_with_parent
     assert_resource "class X < Y; end"

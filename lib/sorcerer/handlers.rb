@@ -1,5 +1,10 @@
 module Sorcerer
-  module Handlers
+  class Source < HandlerClass  
+    def source(sexp)
+      resource(sexp)
+    end
+    teach_spell :source
+  
     VOID_STATEMENT = [:stmts_add, [:stmts_new], [:void_stmt]]
     VOID_BODY = [:body_stmt, VOID_STATEMENT, nil, nil, nil]
     VOID_BODY2 = [:bodystmt, VOID_STATEMENT, nil, nil, nil]

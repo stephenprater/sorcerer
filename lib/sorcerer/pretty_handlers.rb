@@ -1,6 +1,18 @@
 module Sorcerer
-  module PrettyHandlers
-    include Sorcerer::Handlers
+  class PrettySource < Sorcerer::Source
+    def pretty_source(sexp)
+      #barewords are always local
+      self.statement_seperator = "\n"
+      self.indent = "  "
+      source_watch do |string, exp| 
+        if generated_source.end_with? statement_seperator 
+          generated_source << (indent * indent_level) # that ought to work
+        end
+      end
+      resource(sexp)
+    end
+    teach_spell :pretty_source
+
     HANDLERS.merge!({
       # parser keywords
       :BEGIN => lambda { |src, sexp|
@@ -35,6 +47,18 @@ module Sorcerer
         src.emit("def ")
         src.resource(sexp[1])
         src.opt_parens(sexp[2])
+        src.emit_statement_block do
+          src.resource(sexp[3])
+        end
+        src.emit("end")
+      },
+      :if => lambda { |src,sexp| 
+        src.emit("if ")
+        src.resource(sexp[1])
+        src.emit(" then")
+        src.emit_statement_block do
+          src.resource(sexp[2])
+        end
         src.emit_statement_block do
           src.resource(sexp[3])
         end
