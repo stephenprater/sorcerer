@@ -54,11 +54,13 @@ module Sorcerer
         puts "----------------------------------------------------------"
         pp sexp
       end
+      # set the expression "cursor" information before we call the handler
+      # so that it's available in the source_notify method
       @previous_expression = @current_expression if @current_expression
       @current_expression = sexp
-      src = handler.call(self, sexp)
+      handler.call(self, sexp)
       @current_expression = @previous_expression
-      src
+      generated_source 
     end
    
     def opt_parens(sexp)
@@ -91,9 +93,7 @@ module Sorcerer
     def handle_block(sexp)
       resource(sexp[1])     # Arguments
       if ! void?(sexp[2])
-        #only necessary when we are on the same line with a do.
-        #a hard coded exception
-        emit(" ") unless @source.end_with? "\n"
+        emit(" ")
         resource(sexp[2])     # Statements
       end
       emit(" ")

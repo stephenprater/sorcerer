@@ -1,9 +1,7 @@
 require 'test/unit'
 require 'ripper'
 
-require_relative '../lib/sorcerer'
-
-require_relative '../lib/pretty_handlers'
+require_relative '../../lib/sorcerer'
 
 module Sorcerer
   class Transfiguration < Sorcerer::Source
@@ -47,14 +45,64 @@ end
 
       
 
-class SorcererHandlerTest < Test::Unit::TestCase
+class SorcererPrettySourceTest < Test::Unit::TestCase
   
-  def source(string, debug=false)
+  def pretty_source(string, debug=false)
     if debug
       puts
       puts ("*" * 80)
     end
     sexp = Ripper::SexpBuilder.new(string).parse
+    Sorcerer.pretty_source(sexp)
   end
+
+
+  def test_available_after_load
+    sexp = Ripper::SexpBuilder.new("puts \"foo\"").parse
+    assert_raises NoMethodError do
+      Sorcerer.pretty_source(sexp)
+    end
+    require_relative '../../lib/sorcerer/pretty_handlers'
+    assert_equal Sorcerer.pretty_source(sexp), "puts \"foo\""
+  end
+
+  # the pretty printer is kinda dumb.  it tidies up your
+  # code whether you want it to or not.
+  def test_pretty_sources_method_with_a_do_block
+    source = <<-PRETTY
+meth(x, y, *rest, &code) do |a, b=1, c=x, *args, &block|
+  one
+  two
+  three
+end
+PRETTY
+    source.chomp! #pretty doesn't put a newline at end
+    assert_pretty_source source
+  end
+
+  def test_pretty_sources_prettifies_statment_sequences
+    source = "a; b; c"
+    result = "a\nb\nc"
+    assert_equal pretty_source(source), result
+  end
+
+  def test_pretty_source_begin_end
+    assert_pretty_source "begin; end"
+    assert_pretty_source "begin\n  a\nend"
+    assert_pretty_source "begin\n  a()\nend"
+    assert_pretty_source "begin\n  a\n  b\n  c\nend"
+  end
+
+  
+
+
+  private
+
+  def assert_pretty_source string
+    assert_equal string, pretty_source(string)
+  end
+end
+
+    
 
 

@@ -1,3 +1,5 @@
+require 'ruby-debug'
+
 module Sorcerer
   class Source < HandlerClass  
     def source(sexp)
@@ -391,7 +393,10 @@ module Sorcerer
       },
       :regexp_literal => lambda { |src, sexp|
         src.emit("/")
-        src.resource(sexp[1])
+        # account for [:regexp_add, [:regexp_new], [:@tstring_content, "whatever"]] structure
+        # it always seems to to be the same for literals, so i don't think new handlers
+        # for :regexp_add are necessary
+        src.resource(sexp[1][2])
         src.emit("/")
       },
       :rescue => lambda { |src, sexp|
@@ -408,10 +413,7 @@ module Sorcerer
         end
         src.emit(src.statement_seperator)
         if sexp[3]                # Rescue Code
-          if src.void?(sexp[3])
-            src.emit(" ")
-          else
-            src.emit(" ")
+          unless src.void?(sexp[3])
             src.resource(sexp[3])
             src.emit(src.statement_seperator)
           end

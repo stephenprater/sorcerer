@@ -9,7 +9,7 @@ module Sorcerer
           generated_source << (indent * indent_level) # that ought to work
         end
       end
-      resource(sexp)
+      resource(sexp) 
     end
     teach_spell :pretty_source
 
@@ -66,8 +66,12 @@ module Sorcerer
       },
       :do_block => lambda { |src, sexp|
         src.emit(" do")
+        # i like block vars on the same line with "do"
+        if sexp[1].first == :block_var
+          src.resource(sexp[1])
+        end
         src.emit_statement_block do
-          src.handle_block(sexp)
+          src.resource(sexp[2])
         end
         src.emit(src.statement_seperator)
         src.emit("end")
@@ -78,14 +82,13 @@ module Sorcerer
         if src.void?(sexp[2])
           src.emit(src.statement_seperator)
         else
-          1
           src.emit_statement_block do
             src.resource(sexp[2])
           end
         end
         src.emit("end")
       },
-     :rescue => lambda { |src, sexp|
+      :rescue => lambda { |src, sexp|
         src.emit("rescue")
         if sexp[1]                # Exception list
           src.emit(" ")
@@ -99,13 +102,9 @@ module Sorcerer
         end
         src.emit(src.statement_seperator)
         if sexp[3]                # Rescue Code
-          src.emit_statement_block do
-            if src.void?(sexp[3])
-              src.emit(" ")
-            else
-              src.emit(" ")
+          unless src.void?(sexp[3])
+            src.emit_statement_block do
               src.resource(sexp[3])
-              src.emit(src.statement_seperator)
             end
           end
         end
