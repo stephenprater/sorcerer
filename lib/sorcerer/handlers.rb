@@ -6,6 +6,59 @@ module Sorcerer
       resource(sexp)
     end
     teach_spell :source
+
+    def handle_block(sexp)
+      resource(sexp[1])     # Arguments
+      if ! void?(sexp[2])
+        emit(" ")
+        resource(sexp[2])     # Statements
+      end
+      emit(" ")
+    end
+    
+    def words(marker, sexp)
+      emit("%#{marker}{") if @word_level == 0
+      @word_level += 1
+      if sexp[1] != [:qwords_new] && sexp[1] != [:words_new]
+        resource(sexp[1])
+        emit(" ")
+      end
+      resource(sexp[2])
+      @word_level -= 1
+      emit("}") if @word_level == 0
+    end
+
+    def opt_parens(sexp)
+      emit(" ") unless sexp.first == :arg_paren || sexp.first == :paren
+      resource(sexp)
+    end
+
+    def params(normal_args, default_args, rest_args, unknown, block_arg)
+      first = true
+      if normal_args
+        normal_args.each do |sx|
+          first = emit_separator(", ", first)
+          resource(sx)
+        end
+      end
+      if default_args
+        default_args.each do |sx|
+          first = emit_separator(", ", first)
+          resource(sx[0])
+          emit("=")
+          resource(sx[1])
+        end
+      end
+      if rest_args
+        first = emit_separator(", ", first)
+        resource(rest_args)
+      end
+      if block_arg
+        first = emit_separator(", ", first)
+        resource(block_arg)
+      end
+    end
+
   
     VOID_STATEMENT = [:stmts_add, [:stmts_new], [:void_stmt]]
     VOID_BODY = [:body_stmt, VOID_STATEMENT, nil, nil, nil]

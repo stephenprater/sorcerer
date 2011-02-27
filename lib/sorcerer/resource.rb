@@ -25,6 +25,15 @@ module Sorcerer
       @previous_expression = nil
     end
 
+    def method_missing meth, *args
+      # check the handler for specialized handling methods
+      if @handlers.respond_to? meth
+        @handlers.__send__ meth, *args
+      else
+        raise NoMethodError, "unknown method #{meth} for #{self.class}"
+      end
+    end
+
     def handler
       @handlers
     end
@@ -63,11 +72,6 @@ module Sorcerer
       generated_source 
     end
    
-    def opt_parens(sexp)
-      emit(" ") unless sexp.first == :arg_paren || sexp.first == :paren
-      resource(sexp)
-    end
-    
     def emit(string)
       puts "EMITTING '#{string}'" if @debug
       @handlers.respond_to? :source_notify and @handlers.source_notify(string, @current_expression)
@@ -89,55 +93,7 @@ module Sorcerer
       yield if block_given?
       @indent_level -= 1
     end
-
-    def handle_block(sexp)
-      resource(sexp[1])     # Arguments
-      if ! void?(sexp[2])
-        emit(" ")
-        resource(sexp[2])     # Statements
-      end
-      emit(" ")
-    end
-    
-    def params(normal_args, default_args, rest_args, unknown, block_arg)
-      first = true
-      if normal_args
-        normal_args.each do |sx|
-          first = emit_separator(", ", first)
-          resource(sx)
-        end
-      end
-      if default_args
-        default_args.each do |sx|
-          first = emit_separator(", ", first)
-          resource(sx[0])
-          emit("=")
-          resource(sx[1])
-        end
-      end
-      if rest_args
-        first = emit_separator(", ", first)
-        resource(rest_args)
-      end
-      if block_arg
-        first = emit_separator(", ", first)
-        resource(block_arg)
-      end
-    end
-    
-    def words(marker, sexp)
-      emit("%#{marker}{") if @word_level == 0
-      @word_level += 1
-      if sexp[1] != [:qwords_new] && sexp[1] != [:words_new]
-        resource(sexp[1])
-        emit(" ")
-      end
-      resource(sexp[2])
-      @word_level -= 1
-      emit("}") if @word_level == 0
-    end
-    
-    
+        
     def void?(sexp)
       sexp.nil? ||
         sexp == @handlers.void_statement ||

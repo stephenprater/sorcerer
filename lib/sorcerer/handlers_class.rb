@@ -20,7 +20,7 @@ module Sorcerer
     
     attr_accessor :resource_obj
     def_delegators :@resource_obj, :statement_seperator, :indent, :resource, :generated_source,
-      :statement_seperator=, :indent= , :indent_level
+      :statement_seperator=, :indent= , :indent_level, :emit
     
     [:VOID_STATEMENT,:VOID_BODY,:VOID_BODY2,:NYI,:DBG,
     :NOOP,:SPACE,:PASS1,:PASS2,:EMIT1,:HANDLERS].each do |c|
@@ -34,8 +34,16 @@ module Sorcerer
       raise ArgumentError, "Block required for source watch" unless block_given?
       raise ArgumentError, "Block should take the proposed addition \
       and the current S-Exp as arguments" unless block.arity == 2 
-      self.class.send :define_method, :source_notify, &block
+      @notify_blocks ||= {} 
+      @notify_blocks << block
     end
+
+    def source_notify string,sexp
+      @notify_blocks.each do |b|
+        b.call(string,sexp)
+      end
+    end
+      
     
     def [] sexp 
       unless @key_cache

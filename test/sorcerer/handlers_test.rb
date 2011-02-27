@@ -87,14 +87,36 @@ PRETTY
   end
 
   def test_pretty_source_begin_end
-    assert_pretty_source "begin; end"
+    assert_pretty_source "begin\nend"
     assert_pretty_source "begin\n  a\nend"
     assert_pretty_source "begin\n  a()\nend"
     assert_pretty_source "begin\n  a\n  b\n  c\nend"
   end
 
-  
+  def test_pretty_source_begin_ensure_end
+    assert_pretty_source "begin\nensure end"
+    assert_pretty_source "begin\nensure b\nend"
+    assert_pretty_source "begin\n  a\nensure b\nend"
+    assert_pretty_source "begin\n  a\nensure \n  b\nend"
+  end
 
+  def test_can_source_begin_rescue_ensure_end
+    assert_pretty_source "begin\nrescue\nend"
+    assert_pretty_source "begin\nrescue E => ex\n  b\nensure c\nend"
+    assert_pretty_source "begin\n  a\nrescue E => ex\n b\nensure c\nend"
+    assert_pretty_source "begin\n  a\nrescue E, F => ex\n  b\nensure c\nend"
+    assert_pretty_source "begin\n  a\nrescue E, F => ex\n  b\n  c\nensure d\nend"
+    assert_pretty_source "begin\nrescue E, F => ex\n  b\n  c\n  ensure d\nend"
+  end
+
+  def test_can_source_begin_rescue_end
+    assert_pretty_source "begin\nrescue\nend"
+    assert_pretty_source "begin\nrescue E => ex\n   b\nend"
+    assert_pretty_source "begin\n  a\nrescue E => ex\n  b\nend"
+    assert_pretty_source "begin\n  a\nrescue E, F => ex\n  b\nend"
+    assert_pretty_source "begin\n  a\nrescue E, F => ex\n  b\n  c\nend"
+    assert_pretty_source "begin\nrescue E, F => ex\n  b\n  c\nend"
+  end
 
   private
 

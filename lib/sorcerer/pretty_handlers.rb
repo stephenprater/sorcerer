@@ -5,7 +5,7 @@ module Sorcerer
       self.statement_seperator = "\n"
       self.indent = "  "
       source_watch do |string, exp| 
-        if generated_source.end_with? statement_seperator 
+        if generated_source.end_with? statement_seperator and not string == "end"
           generated_source << (indent * indent_level) # that ought to work
         end
       end
