@@ -13,42 +13,56 @@ module Sorcerer
         res.handler.__send__(method, sexp)
       end
     end
+
+    def HandlerClass.handlers
+      HANDLERS
+    end
+
+    VOID_STATEMENT = [:stmts_add, [:stmts_new], [:void_stmt]]
+    VOID_BODY = [:body_stmt, VOID_STATEMENT, nil, nil, nil]
+    VOID_BODY2 = [:bodystmt, VOID_STATEMENT, nil, nil, nil]
    
+    NYI = lambda { |sexp| nyi(sexp) }
+    DBG = lambda { |sexp| pp(sexp) }
+    NOOP = lambda { |sexp| }
+    SPACE = lambda { |sexp| emit(" ") }
+    PASS1 = lambda { |sexp| resource(sexp[1]) }
+    PASS2 = lambda { |sexp| resource(sexp[2]) }
+    EMIT1 = lambda { |sexp| emit(sexp[1]) }
+    HANDLERS = {}
+
     def initialize(res_object)
-      @resource_obj = res_object 
+      @resource_obj = res_object
+      self.class.constants.each do |p|
+        self.class.__send__ :define_method, p.downcase.intern do
+          self.class.const_get p
+        end
+      end
     end
     
     attr_accessor :resource_obj
-    def_delegators :@resource_obj, :statement_seperator, :indent, :resource, :generated_source,
-      :statement_seperator=, :indent= , :indent_level, :emit
+    def_delegators :@resource_obj, :statement_seperator, :indent, :resource,
+      :generated_source, :statement_seperator=, :indent= , :indent_level,
+      :emit, :word_level, :word_level=, :void?
     
-    [:VOID_STATEMENT,:VOID_BODY,:VOID_BODY2,:NYI,:DBG,
-    :NOOP,:SPACE,:PASS1,:PASS2,:EMIT1,:HANDLERS].each do |c|
-      c_meth = c.to_s.downcase
-      define_method c_meth.intern do
-        self.class.const_get c
-      end
-    end
-
     def source_watch &block
       raise ArgumentError, "Block required for source watch" unless block_given?
       raise ArgumentError, "Block should take the proposed addition \
       and the current S-Exp as arguments" unless block.arity == 2 
       @notify_blocks ||= {} 
       @notify_blocks << block
-    end
-
-    def source_notify string,sexp
-      @notify_blocks.each do |b|
-        b.call(string,sexp)
+      unless self.methods.include? :source_notify
+        self.class.__send__ :define_method, :source_notify do |string,sexp|
+          @notify_blocks.each do |b|
+            b.call(string,sexp)
+          end
+        end
       end
     end
-      
     
     def [] sexp 
       unless @key_cache
         @key_cache = {}
-
         all_keys = handlers.keys
         @key_cache[:multi] = all_keys.select do |k|
           k.is_a? Array

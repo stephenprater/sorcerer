@@ -13,129 +13,136 @@ module Sorcerer
     end
     teach_spell :pretty_source
 
+    def emit_statement_block
+      self.indent_level += 1
+      emit(statement_seperator)
+      yield if block_given?
+      self.indent_level -= 1
+    end
+
     HANDLERS.merge!({
       # parser keywords
-      :BEGIN => lambda { |src, sexp|
-        src.emit("BEGIN {")
-        unless src.void?(sexp[1])
-          src.emit(" ")
-          src.emit_statement_block do
-            src.resource(sexp[1])
+      :BEGIN => lambda { |sexp|
+        emit("BEGIN {")
+        unless void?(sexp[1])
+          emit(" ")
+          emit_statement_block do
+            resource(sexp[1])
           end
         end
-        src.emit(" }")
+        emit(" }")
       },
-     :begin => lambda { |src, sexp|
-        src.emit("begin")
-        src.emit_statement_block do
-          src.resource(sexp[1])
+     :begin => lambda { |sexp|
+        emit("begin")
+        emit_statement_block do
+          resource(sexp[1])
         end
-        src.emit("end")
+        emit("end")
       },
-      :class => lambda { |src, sexp|
-        src.resource(sexp[1])
-        if ! src.void?(sexp[2])
-          src.emit " < "
-          src.resource(sexp[2])
+      :class => lambda { |sexp|
+        resource(sexp[1])
+        if ! void?(sexp[2])
+          emit " < "
+          resource(sexp[2])
         end
-        src.emit_statement_block do
-          src.resource(sexp[3]) unless src.void?(sexp[3])
+        emit_statement_block do
+          resource(sexp[3]) unless src.void?(sexp[3])
         end
-        src.emit("end")
+        emit("end")
       },
-      :def => lambda { |src, sexp|
-        src.emit("def ")
-        src.resource(sexp[1])
-        src.opt_parens(sexp[2])
-        src.emit_statement_block do
-          src.resource(sexp[3])
+      :def => lambda { |sexp|
+        emit("def ")
+        resource(sexp[1])
+        opt_parens(sexp[2])
+        emit_statement_block do
+          resource(sexp[3])
         end
-        src.emit("end")
+        emit("end")
       },
-      :if => lambda { |src,sexp| 
-        src.emit("if ")
-        src.resource(sexp[1])
-        src.emit(" then")
-        src.emit_statement_block do
-          src.resource(sexp[2])
+      :if => lambda { |sexp| 
+        emit("if ")
+        resource(sexp[1])
+        emit(" then")
+        emit_statement_block do
+          resource(sexp[2])
         end
-        src.emit_statement_block do
-          src.resource(sexp[3])
+        emit_statement_block do
+          resource(sexp[3])
         end
-        src.emit("end")
+        emit("end")
       },
-      :do_block => lambda { |src, sexp|
-        src.emit(" do")
+      :do_block => lambda { |sexp|
+        emit(" do")
         # i like block vars on the same line with "do"
         if sexp[1].first == :block_var
-          src.resource(sexp[1])
+          resource(sexp[1])
         end
-        src.emit_statement_block do
-          src.resource(sexp[2])
+        emit_statement_block do
+          resource(sexp[2])
         end
-        src.emit(src.statement_seperator)
-        src.emit("end")
+        emit(src.statement_seperator)
+        emit("end")
       },
-      :module => lambda { |src, sexp|
-        src.emit("module ")
-        src.resource(sexp[1])
-        if src.void?(sexp[2])
-          src.emit(src.statement_seperator)
+      :module => lambda { |sexp|
+        emit("module ")
+        resource(sexp[1])
+        if void?(sexp[2])
+          emit(src.statement_seperator)
         else
-          src.emit_statement_block do
-            src.resource(sexp[2])
+          emit_statement_block do
+            resource(sexp[2])
           end
         end
-        src.emit("end")
+        emit("end")
       },
-      :rescue => lambda { |src, sexp|
-        src.emit("rescue")
+      :rescue => lambda { |sexp|
+        emit("rescue")
         if sexp[1]                # Exception list
-          src.emit(" ")
+          emit(" ")
           if sexp[1].first.kind_of?(Symbol)
-            src.resource(sexp[1])
+            resource(sexp[1])
           else
-            src.resource(sexp[1].first)
+            resource(sexp[1].first)
           end
-          src.emit(" => ")
-          src.resource(sexp[2]) 
+          emit(" => ")
+          resource(sexp[2]) 
         end
-        src.emit(src.statement_seperator)
+        emit(src.statement_seperator)
         if sexp[3]                # Rescue Code
-          unless src.void?(sexp[3])
-            src.emit_statement_block do
-              src.resource(sexp[3])
+          unless void?(sexp[3])
+            emit_statement_block do
+              resource(sexp[3])
             end
           end
         end
       },
-      :until => lambda { |src, sexp|
-        src.emit("until ")
-        src.resource(sexp[1])
-        src.emit(" do ")
-        src.emit_statement_block do 
-          src.resource(sexp[2])
+      :until => lambda { |sexp|
+        emit("until ")
+        resource(sexp[1])
+        emit(" do ")
+        emit_statement_block do 
+          resource(sexp[2])
         end
-        src.emit(" end")
+        emit(" end")
       },
-     :when => lambda { |src, sexp|
-        src.emit("when ")
-        src.resource(sexp[1])
-        src.emit(src.statement_seperator)
-        src.resource(sexp[2])
+     :when => lambda { |sexp|
+        emit("when ")
+        resource(sexp[1])
+        emit(src.statement_seperator)
+        resource(sexp[2])
         if sexp[3] && sexp[3].first == :when
-          src.emit(" ")
+          emit(" ")
         end
-        src.resource(sexp[3])      
+        resource(sexp[3])      
       },
-      :while => lambda { |src, sexp|
-        src.emit("while ")
-        src.resource(sexp[1])
-        src.emit(" do ")
-        src.emit_statement_block do
-          src.resource(sexp[2])
+      :while => lambda { |sexp|
+        emit("while ")
+        resource(sexp[1])
+        emit(" do ")
+        emit_statement_block do
+          resource(sexp[2])
         end
-        src.emit(" end")
+        emit(" end")
       }
     })
   end
