@@ -20,7 +20,8 @@ module Sorcerer
       self.indent_level -= 1
     end
 
-    HANDLERS.merge!({
+    handlers do |hs|
+      hs.merge!({
       # parser keywords
       :BEGIN => lambda { |sexp|
         emit("BEGIN {")
@@ -143,7 +144,7 @@ module Sorcerer
           resource(sexp[2])
         end
         emit(" end")
-      }
-    })
+      }})
+    end
   end
 end
