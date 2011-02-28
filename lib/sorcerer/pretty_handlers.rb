@@ -13,6 +13,14 @@ module Sorcerer
     end
     teach_spell :pretty_source
 
+    def emit_statement_block
+      @indent_level += 1
+      emit(@statement_seperator)
+      yield if block_given?
+      @indent_level -= 1
+    end
+
+
     HANDLERS.merge!({
       # parser keywords
       :BEGIN => lambda { |src, sexp|
