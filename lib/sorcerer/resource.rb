@@ -46,15 +46,6 @@ module Sorcerer
       @source = new_source
     end
 
-    def statement_seperator
-      #prevent double output of the statment seperator
-      if @source.end_with? @statement_seperator
-        ''
-      else
-        @statement_seperator
-      end
-    end
-
     def resource(sexp)
       return unless sexp
       handler = @handlerobj[sexp]
@@ -73,13 +64,18 @@ module Sorcerer
     end
    
     def emit(string)
+      #prevent double output of the statement seperator
+      if string == @statement_seperator
+        string = '' if @source.end_with? @statement_seperator
+      end
+      
       puts "EMITTING '#{string}'" if @debug
       if @handlerobj.respond_to? :source_notify
         @handlerobj.source_notify(string, @current_expression)
       end
       @source << string.to_s
     end
-    
+
     def nyi(sexp)
       raise "Handler for #{sexp.first} not implemented (#{sexp.inspect})"
     end

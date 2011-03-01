@@ -15,14 +15,14 @@ module Sorcerer
     end
 
     def HandlerClass.handlers
-      debugger
       handlers_const = const_get :HANDLERS
       if block_given? 
-        handlers_new = yield handlers_const
-        handlers_const.merge! handlers_new
-        const_set :HANDLERS, handlers_const
+        handlers_new = yield handlers_const.dup
+        const_set :HANDLERS, handlers_new
+        handlers_new
+      else
+        handlers_const
       end
-      handlers_const
     end
 
     # So, the big question is why the hell are all these things constants?  The
@@ -34,7 +34,7 @@ module Sorcerer
     # Eigenclass iVars |            |       X        |   X (with method)
     # Class Vars       |    X       |                |         X
     # Instance Vars    |            |       X        |         X
-    # Constants        |    X       |       X        |   X (with method)
+    # Constants        |    X       |       X        |         X
     #
     # We can create accessor for the constants if we want (although it's 
     # possible to look them up from outside of the class with the :: syntax.)
@@ -45,6 +45,14 @@ module Sorcerer
     #
     # Plus, we don't want to require active support, and class_inheritable
     # accessor doesn't really work all that great.
+    # 
+    # Thus, to override one of these constants for a handler subclass, just
+    # define it in the class definition.
+    #
+    # The HANDLERS constant could actually be constructed using eigenclass
+    # ivars,since it is generally modified rather than reassigned wholesale
+    # but for the sake of ease, it is implemented by duplicating the constant
+    # into the class using th#handlers class method
 
     VOID_STATEMENT = [:stmts_add, [:stmts_new], [:void_stmt]]
     VOID_BODY = [:body_stmt, VOID_STATEMENT, nil, nil, nil]
