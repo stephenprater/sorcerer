@@ -30,7 +30,6 @@ module Sorcerer
   end
   
   class SimpleMacro < Sorcerer::Source
-    debugger
     def macro_sub(sexp)
       resource(sexp)
     end
@@ -38,8 +37,8 @@ module Sorcerer
 
     handlers do |h|
       h.merge({
-        [:ident, "macro_expand"] => lambda { |src,sexp|
-          src.emit <<-NEWSOURCE
+        [:ident, "macro_expand"] => lambda { |sexp|
+          emit <<-NEWSOURCE
             lambda { puts "I am an expanded macro." (1..5).to_a }.call
           NEWSOURCE
         }
@@ -47,8 +46,6 @@ module Sorcerer
     end
   end
 end
-      
-
       
 
 class SorcererPrettySourceTest < Test::Unit::TestCase
