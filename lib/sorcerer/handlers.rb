@@ -65,7 +65,8 @@ module Sorcerer
     end
 
 
-    HANDLERS = {
+    handlers do |h|
+      h = {
       # parser keywords
       :BEGIN => lambda { |sexp|
         emit("BEGIN {")
@@ -659,6 +660,8 @@ module Sorcerer
       :@words_beg => NYI,
       :@words_sep => NYI,
     }
-    HANDLERS[:bodystmt] = HANDLERS[:body_stmt]
+    h[:bodystmt] = h[:body_stmt]
+    h
+    end
   end
 end

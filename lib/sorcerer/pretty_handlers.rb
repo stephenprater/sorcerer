@@ -2,10 +2,13 @@ module Sorcerer
   class PrettySource < Sorcerer::Source
     def pretty_source(sexp)
       #barewords are always local
+      debugger
+      1
+    
       self.statement_seperator = "\n"
       self.indent = "  "
       source_watch do |string, exp| 
-        if generated_source.end_with? statement_seperator and not string == "end"
+        if generated_source.end_with? statement_seperator
           generated_source << (indent * indent_level) # that ought to work
         end
       end
@@ -21,7 +24,7 @@ module Sorcerer
     end
 
     handlers do |hs|
-      hs.merge!({
+      hs.merge({
       # parser keywords
       :BEGIN => lambda { |sexp|
         emit("BEGIN {")
@@ -47,7 +50,7 @@ module Sorcerer
           resource(sexp[2])
         end
         emit_statement_block do
-          resource(sexp[3]) unless src.void?(sexp[3])
+          resource(sexp[3]) unless void?(sexp[3])
         end
         emit("end")
       },
@@ -81,14 +84,14 @@ module Sorcerer
         emit_statement_block do
           resource(sexp[2])
         end
-        emit(src.statement_seperator)
+        emit(statement_seperator)
         emit("end")
       },
       :module => lambda { |sexp|
         emit("module ")
         resource(sexp[1])
         if void?(sexp[2])
-          emit(src.statement_seperator)
+          emit(statement_seperator)
         else
           emit_statement_block do
             resource(sexp[2])
@@ -108,7 +111,7 @@ module Sorcerer
           emit(" => ")
           resource(sexp[2]) 
         end
-        emit(src.statement_seperator)
+        emit(statement_seperator)
         if sexp[3]                # Rescue Code
           unless void?(sexp[3])
             emit_statement_block do
@@ -129,7 +132,7 @@ module Sorcerer
      :when => lambda { |sexp|
         emit("when ")
         resource(sexp[1])
-        emit(src.statement_seperator)
+        emit(statement_seperator)
         resource(sexp[2])
         if sexp[3] && sexp[3].first == :when
           emit(" ")

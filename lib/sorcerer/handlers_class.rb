@@ -15,16 +15,14 @@ module Sorcerer
     end
 
     def HandlerClass.handlers
-      if block_given?
-        #jump through hoops to avoid
-        #constant reassignment warnings
-        handlers = HANDLERS
-        new_handlers = yield handlers 
-        HANDLERS.clear
-        HANDLERS.merge! new_handlers
-      else
-        HANDLERS
+      debugger
+      handlers_const = const_get :HANDLERS
+      if block_given? 
+        handlers_new = yield handlers_const
+        handlers_const.merge! handlers_new
+        const_set :HANDLERS, handlers_const
       end
+      handlers_const
     end
 
     # So, the big question is why the hell are all these things constants?  The
@@ -73,13 +71,13 @@ module Sorcerer
     attr_accessor :resource_obj
     def_delegators :@resource_obj, :statement_seperator, :indent, :resource,
       :generated_source, :statement_seperator=, :indent= , :indent_level,
-      :emit, :word_level, :word_level=, :void?
+      :indent_level=, :emit, :word_level, :word_level=, :void?
     
     def source_watch &block
       raise ArgumentError, "Block required for source watch" unless block_given?
       raise ArgumentError, "Block should take the proposed addition \
       and the current S-Exp as arguments" unless block.arity == 2 
-      @notify_blocks ||= {} 
+      @notify_blocks ||= [] 
       @notify_blocks << block
       unless self.methods.include? :source_notify
         self.class.__send__ :define_method, :source_notify do |string,sexp|

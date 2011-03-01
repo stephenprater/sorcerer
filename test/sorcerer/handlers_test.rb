@@ -22,23 +22,29 @@ module Sorcerer
       resource(sexp)
     end
     teach_spell :detect_chained_call
-    
-    HANDLERS[:brace_block] = HANDLERS[:do_block]
+   
+    handlers do |h|
+      h[:brace_block] = h[:do_block]
+      h
+    end
   end
   
   class SimpleMacro < Sorcerer::Source
+    debugger
     def macro_sub(sexp)
       resource(sexp)
     end
     teach_spell :macro_sub
 
-    HANDLERS.merge!({
-      [:ident, "macro_expand"] => lambda { |src,sexp|
-        src.emit <<-NEWSOURCE
-          lambda { puts "I am an expanded macro." (1..5).to_a }.call
-        NEWSOURCE
-      }
-    })
+    handlers do |h|
+      h.merge({
+        [:ident, "macro_expand"] => lambda { |src,sexp|
+          src.emit <<-NEWSOURCE
+            lambda { puts "I am an expanded macro." (1..5).to_a }.call
+          NEWSOURCE
+        }
+      })
+    end
   end
 end
       
