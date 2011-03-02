@@ -8,9 +8,20 @@ module Sorcerer
 
     def HandlerClass.teach_spell method
       handler_class = self
-      Sorcerer.singleton_class.__send__ :define_method, method do |sexp, debug = false|
-        res = Sorcerer::Resource.new(handler_class,debug)
-        res.handler.__send__(method, sexp)
+      Sorcerer.singleton_class.__send__ :define_method, method do |*args|
+        sexp = args.shift
+        unless sexp.is_a? Array
+          raise ArgumentError, "The first argument should be a Ripper-style \
+          S-Expression"
+        end
+        res = Sorcerer::Resource.new(handler_class)
+        arity = handler_class.instance_method(method).arity
+        if arity == 1
+          # no chance to pass additional arguments
+          res.handler.__send__(method, sexp)
+        else
+          res.handler.__send__(method, sexp, *args)
+        end
       end
     end
 
@@ -58,10 +69,14 @@ module Sorcerer
     VOID_BODY = [:body_stmt, VOID_STATEMENT, nil, nil, nil]
     VOID_BODY2 = [:bodystmt, VOID_STATEMENT, nil, nil, nil]
    
-    NYI = lambda { |sexp| nyi(sexp) }
+    NYI = lambda { |sexp| 
+        debugger;1
+        raise NotImplementedError, "Handler for #{sexp.first} is not implemented."
+        }
+
     DBG = lambda { |sexp| pp(sexp) }
     NOOP = lambda { |sexp| }
-    SPACE = lambda { |sexp| emit(" ") }
+    SPACE = lambda { |sexp = nil| emit(" ") }
     PASS1 = lambda { |sexp| resource(sexp[1]) }
     PASS2 = lambda { |sexp| resource(sexp[2]) }
     EMIT1 = lambda { |sexp| emit(sexp[1]) }
@@ -88,7 +103,7 @@ module Sorcerer
       @notify_blocks ||= [] 
       @notify_blocks << block
       unless self.methods.include? :source_notify
-        self.class.__send__ :define_method, :source_notify do |string,sexp|
+        self.singleton_class.__send__ :define_method, :source_notify do |string,sexp|
           @notify_blocks.each do |b|
             b.call(string,sexp)
           end

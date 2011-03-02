@@ -12,6 +12,7 @@ module Sorcerer
     attr_accessor :statement_seperator
     attr_accessor :indent, :indent_level, :word_level
     attr_accessor :current_expression, :previous_expression
+    attr_reader   :debug
 
     def initialize(handler_class = Source, debug=false)
       @source = ''
@@ -74,10 +75,6 @@ module Sorcerer
         @handlerobj.source_notify(string, @current_expression)
       end
       @source << string.to_s
-    end
-
-    def nyi(sexp)
-      raise "Handler for #{sexp.first} not implemented (#{sexp.inspect})"
     end
     
     def void?(sexp)

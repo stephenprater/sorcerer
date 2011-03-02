@@ -201,6 +201,7 @@ class SourcerTest < Test::Unit::TestCase
     assert_resource "/[a-z]/"
     assert_resource "/\[a-z\]/"
     assert_resource '/#{name}/'
+    assert_resource '/^#{a}\/?/'
   end
 
   def test_can_source_range
@@ -296,6 +297,8 @@ class SourcerTest < Test::Unit::TestCase
 
   def test_can_source_undef
     assert_resource "undef a"
+    assert_resource "undef a, b"
+    assert_resource "undef a, b, c"
   end
 
   def test_can_source_multiple_assignment
@@ -495,6 +498,12 @@ class SourcerTest < Test::Unit::TestCase
     assert_resource "class X; def f(); end; public :f; end"
     assert_resource "class X; def f(); end; protected :f; end"
     assert_resource "class X; def f(); end; private :f; end"
+  end
+
+  def test_can_source_meta_class_access
+    assert_resource "class << self; end"
+    assert_resource "class << self; self; end"
+    assert_resource "class << self; foo; bar; end"
   end
 
   def test_can_source_module

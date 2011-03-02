@@ -2,7 +2,10 @@ require 'ruby-debug'
 
 module Sorcerer
   class Source < HandlerClass  
-    def source(sexp)
+    def source(sexp, debug)
+      resource_obj.instance_eval do
+        @debug = true
+      end
       resource(sexp)
     end
     teach_spell :source
@@ -236,7 +239,12 @@ module Sorcerer
         emit(" ")
         resource(sexp[2])
       },
-      :command_call => NYI,
+      :command_call => lambda { |sexp| 
+        resource(sexp[1])
+        emit(sexp[2]) 
+        resource(sexp[3])
+        opt_parens(sexp[4])
+      },
       :const_path_field => lambda { |sexp|
         resource(sexp[1])
         emit("::")
@@ -439,11 +447,13 @@ module Sorcerer
       },
       :regexp_literal => lambda { |sexp|
         emit("/")
-        # account for [:regexp_add, [:regexp_new], [:@tstring_content, "whatever"]] structure
-        # it always seems to to be the same for literals, so i don't think new handlers
-        # for :regexp_add are necessary
-        resource(sexp[1][2])
+        resource(sexp[1])
         emit("/")
+      },
+      :regexp_add => lambda { |sexp|
+        # i beleive that "new" marks the innermost regex string
+        resource(sexp[1]) unless sexp[1].first == :regexp_new
+        resource(sexp[2])
       },
       :rescue => lambda { |sexp|
         emit("rescue")
@@ -484,7 +494,14 @@ module Sorcerer
       :return0 => lambda { |sexp|
         emit("return")
       },
-      :sclass => NYI,
+      :sclass => lambda { |sexp|
+        emit("class ") 
+        emit("<< ")
+        resource(sexp[1])
+        emit(statement_seperator)
+        resource(sexp[2])
+        emit("end")
+      },
       :stmts_add => lambda { |sexp|
         if sexp[1] != [:stmts_new]
           resource(sexp[1])
@@ -531,7 +548,10 @@ module Sorcerer
       },
       :undef => lambda { |sexp|
         emit("undef ")
-        resource(sexp[1].first)
+        sexp[1].each_with_index do |item,i|
+          emit(", ") if i > 0
+          resource(item)
+        end
       },
       :unless => lambda { |sexp|
         emit("unless ")
@@ -612,36 +632,37 @@ module Sorcerer
       },
       
       # Scanner keywords
-      
-      :@CHAR => NYI,
+      :@backref => EMIT1,
+      :@CHAR => EMIT1,
+      :@const => EMIT1,
+      :@cvar => EMIT1,
+      :@float => EMIT1,
+      :@gvar => EMIT1,
+      :@ident => EMIT1,
+      :@int => EMIT1,
+      :@ivar => EMIT1,
+      :@kw => EMIT1,
+      :@op => EMIT1,
+      :@tstring_content => EMIT1,
+  
       :@__end__ => NYI,
-      :@backref => NYI,
       :@backtick => NYI,
       :@comma => NYI,
       :@comment => NYI,
-      :@const => EMIT1,
-      :@cvar => EMIT1,
       :@embdoc => NYI,
       :@embdoc_beg => NYI,
       :@embdoc_end => NYI,
       :@embexpr_beg => NYI,
       :@embexpr_end => NYI,
       :@embvar => NYI,
-      :@float => EMIT1,
-      :@gvar => EMIT1,
       :@heredoc_beg => NYI,
       :@heredoc_end => NYI,
-      :@ident => EMIT1,
       :@ignored_nl => NYI,
-      :@int => EMIT1,
-      :@ivar => EMIT1,
-      :@kw => EMIT1,
       :@label => NYI,
       :@lbrace => NYI,
       :@lbracket => NYI,
       :@lparen => NYI,
       :@nl => NYI,
-      :@op => EMIT1,
       :@period => NYI,
       :@qwords_beg => NYI,
       :@rbrace => NYI,
@@ -655,7 +676,6 @@ module Sorcerer
       :@tlambda => NYI,
       :@tlambeg => NYI,
       :@tstring_beg => NYI,
-      :@tstring_content => EMIT1,
       :@tstring_end => NYI,
       :@words_beg => NYI,
       :@words_sep => NYI,
