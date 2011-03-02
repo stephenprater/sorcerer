@@ -30,7 +30,6 @@ module Sorcerer
   end
   
   class SimpleMacro < Sorcerer::Source
-    debugger
     def macro_sub(sexp)
       resource(sexp)
     end
@@ -38,8 +37,8 @@ module Sorcerer
 
     handlers do |h|
       h.merge({
-        [:ident, "macro_expand"] => lambda { |src,sexp|
-          src.emit <<-NEWSOURCE
+        [:ident, "macro_expand"] => lambda { |sexp|
+          emit <<-NEWSOURCE
             lambda { puts "I am an expanded macro." (1..5).to_a }.call
           NEWSOURCE
         }
@@ -139,7 +138,7 @@ PRETTY
 
   def test_can_pretty_source_break
     assert_pretty_source "while c do\n  a\n  break if b\n  c\nend"
-    assert_pretty_source "while c do\n  a\n  break value if b\n   c\nend"
+    assert_pretty_source "while c do\n  a\n  break value if b\n  c\nend"
   end
 
   def test_can_pretty_source_next
@@ -183,44 +182,44 @@ PRETTY
   end
 
   def test_can_source_def
-    assert_resource "def f a; end"
-    assert_resource "def f(); end"
-    assert_resource "def f(a); end"
-    assert_resource "def f(a, b); end"
-    assert_resource "def f(a, *args); end"
-    assert_resource "def f(a, *args, &block); end"
-    assert_resource "def f(a); x; end"
-    assert_resource "def f(a); x; y; end"
+    assert_pretty_source "def f\n  a\nend"
+    assert_pretty_source "def f()\nend"
+    assert_pretty_source "def f(a)\nend"
+    assert_pretty_source "def f(a, b)\nend"
+    assert_pretty_source "def f(a, *args)\nend"
+    assert_pretty_source "def f(a, *args, &block)\nend"
+    assert_pretty_source "def f(a)\n  x\nend"
+    assert_pretty_source "def f(a)\n  x\n  y\nend"
   end
 
   def test_can_source_class_without_parent
-    assert_resource "class X; end"
-    assert_resource "class X; x; end"
-    assert_resource "class X; def f(); end; end"
+    assert_pretty_source "class X\nend"
+    assert_pretty_source "class X\n  x\nend"
+    assert_pretty_source "class X\n  def f()\n    x\n  end\nend"
   end
 
   def test_can_source_class_with_parent
-    assert_resource "class X < Y; end"
-    assert_resource "class X < Y; x; end"
+    assert_pretty_source "class X < Y\nend"
+    assert_pretty_source "class X < Y\n  x\nend"
   end
 
   def test_can_source_class_with_self_parent
-    assert_resource "class X < self; end"
+    assert_pretty_source "class X < self\nend"
   end
 
   def test_can_source_private_etc_in_class
-    assert_resource "class X; public; def f(); end; end"
-    assert_resource "class X; protected; def f(); end; end"
-    assert_resource "class X; private; def f(); end; end"
-    assert_resource "class X; def f(); end; public :f; end"
-    assert_resource "class X; def f(); end; protected :f; end"
-    assert_resource "class X; def f(); end; private :f; end"
+    assert_pretty_source "class X\n  public\n  def f()\n  end\nend"
+    assert_pretty_source "class X\n  protected\n  def f()\n  end\nend"
+    assert_pretty_source "class X\n  private\n  def f()\n  end\nend"
+    assert_pretty_source "class X\n  def f()\n  end\n  public :f\nend"
+    assert_pretty_source "class X\n  def f()\n  end\n  protected :f\nend"
+    assert_pretty_source "class X\n  def f()\n  end\n  private :f\nend"
   end
 
   def test_can_source_module
-    assert_resource "module X; end"
-    assert_resource "module X; x; end"
-    assert_resource "module X; def f(); end; end"
+    assert_pretty_source "module X\nend"
+    assert_pretty_source "module X\n  x\nend"
+    assert_pretty_source "module X\n  def f()\n  end\nend"
   end
 
   private
