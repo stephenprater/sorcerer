@@ -77,3 +77,7 @@ module MinimalMatch
     true
   end
 end
+
+class Array
+  include MinimalMatch
+end

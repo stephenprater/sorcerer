@@ -98,8 +98,8 @@ module Sorcerer
     
     def source_watch &block
       raise ArgumentError, "Block required for source watch" unless block_given?
-      raise ArgumentError, "Block should take the proposed addition \
-      and the current S-Exp as arguments" unless block.arity == 2 
+      raise ArgumentError, 
+        "Block should take the proposed addition and the current S-Exp as arguments" unless block.arity == 2 
       @notify_blocks ||= [] 
       @notify_blocks << block
       unless self.methods.include? :source_notify

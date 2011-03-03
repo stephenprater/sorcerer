@@ -1,6 +1,6 @@
 require_relative 'handlers'
 
-require 'strscan'
+require 'benchmark'
 
 class String
   #because i can't believe this doen't exist already
@@ -27,10 +27,44 @@ module Sorcerer
     # most common - techincally any operator or
     # comma can break a line
     
-    BREAKABLE_PATTERNS = [/,/,/(\|.+?\|)/,/\|\|/,/&&/,/\+/]
+    BREAKABLE_PATTERNS = [/(\{\s(\|.+?\|)*)/,/&&/,/\|\|/,/,/,/\+/] 
+    
+    def intelligent_break string
+      (@since_last_nl = 0 and return) if string == "\n"
+      @since_last_nl += string.length
+
+      while @since_last_nl > 80
+        puts @since_last_nl
+        last_line = generated_source[generated_source.rindex("\n")..-1] rescue generated_source
+        # find all quotes and regexes 
+        restricted_ranges = last_line.matches(/((["\/]).*?\2)/).collect do |m|
+          Range.new(m.begin(0), m.end(0))
+        end
+        
+        break_loc = 0
+        bp = BREAKABLE_PATTERNS.each do |char|
+          last_line.rindex(char)
+          cand = Regexp.last_match.end(0) rescue 0
+          # only break at end of quotes and regexes
+          restricted_ranges.each do |r|
+            cand = r.begin - 1 if r.cover? cand
+          end
+          break_loc = ( cand > break_loc and cand < 80 )? cand : break_loc
+          break char if break_loc != 0 #quit on the first good one we find
+        end
+        return if break_loc == 0
+        
+        break_loc = (generated_source.length - last_line.length) + break_loc
+        generated_source.insert(break_loc,"\n #{indent * indent_level}")
+        @since_last_nl = generated_source[generated_source.rindex("\n")..-1].length
+      end
+    end
+
+
     def pretty_source(sexp, *opts)
       debug = (opts.include? :debug) ? true : false
-      trailing_new_line = (opts & [:trailing_newline,:tnl]).length >= 1 ? true : false
+      trailing_new_line = (opts & [:trailing_newline,
+        :tnl,:trailing_new_line]).length >= 1 ? true : false
       #barewords are always local
       @since_last_nl = 0
       self.statement_seperator = "\n"
@@ -51,30 +85,7 @@ module Sorcerer
 
       # break the line if we're longer than 80 chars
       source_watch do |string, exp|
-        if string == "\n"
-          @since_last_nl = 0
-          next
-        else
-          @since_last_nl += string.length
-        end
-
-        if @since_last_nl > 80
-          # search backwards for the last (first?) breakable character
-          last_line = generated_source.matches(/^/).to_a.last.post_match
-          puts "#{last_line}"
-          break_loc = 0
-          BREAKABLE_PATTERNS.each do |char|
-            # position of the last matching breakable
-            cand = last_line.matches(char).reverse_each.collect { |m|
-              m.end(0) }.delete_if { |c| c > 80}.max || 0
-            break_loc = cand > break_loc ? cand : break_loc 
-            puts "last #{char} found at column #{break_loc}"
-          end
-          break_loc = (generated_source.length - last_line.length) + break_loc 
-          puts "breaking at #{bl}"
-          generated_source.insert(bl,"\n #{indent * indent_level}")
-          @since_last_nl = 0
-        end
+        intelligent_break(string)
       end
         
       # add the indents
@@ -90,7 +101,7 @@ module Sorcerer
         resource(sexp) 
       else
         resource(sexp) << "\n"
-      end
+     end
     end
     teach_spell :pretty_source
 
@@ -121,7 +132,7 @@ module Sorcerer
     end
 
     def opt_parens(sexp)
-      if sexp.any?
+      if sexp[1..-1].any?
         super(sexp)
       end
     end
