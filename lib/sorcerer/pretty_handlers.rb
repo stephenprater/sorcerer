@@ -1,5 +1,6 @@
 require_relative 'handlers'
 
+require 'strscan'
 
 class String
   #because i can't believe this doen't exist already
@@ -26,8 +27,7 @@ module Sorcerer
     # most common - techincally any operator or
     # comma can break a line
     
-    # ha - the second one cathes || too.
-    BREAKABLE_PATTERNS = [/,/,/(\|.*?\|)/,/&&/,/\+/]
+    BREAKABLE_PATTERNS = [/,/,/(\|.+?\|)/,/\|\|/,/&&/,/\+/]
     def pretty_source(sexp, *opts)
       debug = (opts.include? :debug) ? true : false
       trailing_new_line = (opts & [:trailing_newline,:tnl]).length >= 1 ? true : false
@@ -60,13 +60,18 @@ module Sorcerer
 
         if @since_last_nl > 80
           # search backwards for the last (first?) breakable character
-          bl = generated_source.length - @since_last_nl
+          last_line = generated_source.matches(/^/).to_a.last.post_match
+          puts "#{last_line}"
+          break_loc = 0
           BREAKABLE_PATTERNS.each do |char|
-            #position of the last matching breakable
-            cand = generated_source.matches(char).to_a.last.end(0) rescue 0
-            bl = cand > bl ? cand : bl
+            # position of the last matching breakable
+            cand = last_line.matches(char).reverse_each.collect { |m|
+              m.end(0) }.delete_if { |c| c > 80}.max || 0
+            break_loc = cand > break_loc ? cand : break_loc 
+            puts "last #{char} found at column #{break_loc}"
           end
-          puts "breaking at #{bl} on"
+          break_loc = (generated_source.length - last_line.length) + break_loc 
+          puts "breaking at #{bl}"
           generated_source.insert(bl,"\n #{indent * indent_level}")
           @since_last_nl = 0
         end
