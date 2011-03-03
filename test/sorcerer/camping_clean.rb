@@ -32,8 +32,8 @@ module Camping
       p, h = /\(.+?\)/, g.grep(Hash)
       g -= h
       raise "bad route" unless u = c.urls.find { |x|
-        break x if x.scan(p).size == g.size && /^#{x}\/?$/ =~ (x = g.inject(x) { |x, a| x.sub p,
-        U.escape((a.to_param rescue a)) }.gsub(/\\(.)/) { $1 }) }
+        break x if x.scan(p).size == g.size &&
+        /^#{x}\/?$/ =~ (x = g.inject(x) { |x, a| x.sub p, U.escape((a.to_param rescue a)) }.gsub(/\\(.)/) { $1 }) }
       h.any? ? u + "?" + U.build_query(h[0]) : u
     end
 
@@ -56,8 +56,8 @@ module Camping
     L = :layout
 
     def lookup n
-      T.fetch(n.to_sym) { |k| t = Views.method_defined?(k) || (f = Dir[[O[:views] ||
-        "views", "#{n}.*"] * "/"][0]) && Template.new(f, O[f[/\.(\w+)$/, 1].to_sym] || {})
+      T.fetch(n.to_sym) { |k| t = Views.method_defined?(k) ||
+        (f = Dir[[O[:views] || "views", "#{n}.*"] * "/"][0]) && Template.new(f, O[f[/\.(\w+)$/, 1].to_sym] || {})
       O[:dynamic_templates] ? t : T[k] = t }
     end
 
@@ -65,8 +65,8 @@ module Camping
       if t = lookup(v) then
         o = Hash === a[-1] ? a.pop : {}
         s = (t == true) ? mab { send v, *a, &b } : t.render(self, o[:locals] || {}, &b)
-        s = render(L, o.merge(L => false)) { s } if v.to_s[0] != ?_ && o[L] != false &&
-          lookup(L)
+        s = render(L, o.merge(L => false)) { s } if v.to_s[0] != ?_ &&
+          o[L] != false && lookup(L)
         s
       else
         raise "Can't find template #{v}"
@@ -112,8 +112,8 @@ module Camping
     def initialize(env, m)
       r = @request = Rack::Request.new(@env = env)
       @root, @input, @cookies, @state, @headers, @status,
-        @method = r.script_name.sub(/\/$/, ""), n(r.params), H[@old_cookies = r.cookies], H[r.session], {},
-        m =~ /r(\d+)/ ? $1.to_i : 200, m
+        @method = r.script_name.sub(/\/$/, ""), n(r.params),
+        H[@old_cookies = r.cookies], H[r.session], {}, m =~ /r(\d+)/ ? $1.to_i : 200, m
     end
 
     def n h
@@ -157,8 +157,8 @@ module Camping
         constants.map { |c| k = const_get(c)
         k.send :include, C, X, Base, Helpers, Models
         @r = [k] + r if r - [k] == r
-    
-             k.meta_def(:urls) { ["/#{c.to_s.scan(/.[^A-Z]*/).map(&N.method(:[])) * "/"}"] } if !k.respond_to? :urls }
+
+                 k.meta_def(:urls) { ["/#{c.to_s.scan(/.[^A-Z]*/).map(&N.method(:[])) * "/"}"] } if !k.respond_to? :urls }
       end
     end
     I = R()
