@@ -1,17 +1,15 @@
 #!/usr/bin/env ruby
 require_relative 'handlers_class'
-
 require_relative 'handlers'
 
 module Sorcerer
+  class NextExpression < StandardError; end
 
   class Resource
-    
     class NoHandlerError < StandardError; end
 
     attr_accessor :statement_seperator
     attr_accessor :indent, :indent_level, :word_level
-    attr_accessor :current_expression, :previous_expression, :expression_ancestry
     attr_reader   :debug
 
     def initialize(handler_class = Source, debug=false)
@@ -22,9 +20,6 @@ module Sorcerer
       @statement_seperator = "; "
       @indent=""
       @handlerobj = handler_class.new(self)
-      @current_expression = nil
-      @previous_expression = nil
-      @expression_ancestry = []
     end
 
     def method_missing meth, *args
@@ -48,22 +43,6 @@ module Sorcerer
       @source = new_source
     end
 
-    def expression_level sexp
-      pop_next = false
-      @previous_expression = @current_expression if @current_expression
-      @current_expression = sexp
-      unless @previous_expression and @previous_expression.include?(@current_expression)
-        @expression_ancestry.push @current_expression
-        yield sexp 
-        @expression_ancestry.pop
-      else
-        yield sexp 
-      end
-      @current_expression = @previous_expression
-    end
-    private :expression_level
-      
-        
     def resource(sexp)
       return unless sexp
       handler = @handlerobj[sexp]
@@ -74,10 +53,20 @@ module Sorcerer
       end
       # set the expression "cursor" information before we call the handler
       # so that it's available in the source_notify method
-      expression_level(sexp) do |sexp|
+      previous_expression = @current_expression if @current_expression
+      @current_expression = sexp
+      until_expression = catch :next_expression do
         @handlerobj.instance_exec sexp, &handler
+        nil
       end
-      
+      # if something was thrown, run back up
+      # the chain until we reach a match
+      if until_expression
+        unless previous_expression =~ until_expression
+          throw :next_expression, until_expression
+        end
+      end
+      @current_expression = previous_expression 
       generated_source 
     end
    
@@ -86,12 +75,15 @@ module Sorcerer
       if string == @statement_seperator
         string = '' if @source.end_with? @statement_seperator
       end
-      
       puts "EMITTING '#{string}'" if @debug
-      if @handlerobj.respond_to? :source_notify
-        @handlerobj.source_notify(string, @current_expression)
+      until_expression = catch :next_expression do
+        if @handlerobj.respond_to? :source_notify
+          @handlerobj.source_notify(string, @current_expression)
+        end
+        nil 
       end
       @source << string.to_s
+      throw :next_expression, until_expression if until_expression
     end
     
     def void?(sexp)

@@ -10,6 +10,15 @@ module MinimalMatch
       def to_a 
         [AnyNumberOfThings]
       end
+
+      def * num
+        k = []
+        num.times do
+          k << Anything
+        end
+        k
+      end 
+        
     end
   end
 
@@ -76,8 +85,4 @@ module MinimalMatch
     end
     true
   end
-end
-
-class Array
-  include MinimalMatch
 end

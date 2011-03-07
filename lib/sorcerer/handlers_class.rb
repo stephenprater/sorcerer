@@ -1,19 +1,20 @@
 require 'forwardable'
 
 require_relative 'minimal_match'
+require_relative 'sexp_array'
 
 module Sorcerer
   class HandlerClass
     extend Forwardable
-
+    
     def HandlerClass.teach_spell method
       handler_class = self
       Sorcerer.singleton_class.__send__ :define_method, method do |*args|
         sexp = args.shift
         unless sexp.is_a? Array
-          raise ArgumentError, "The first argument should be a Ripper-style \
-          S-Expression"
+          raise ArgumentError, "The first argument should be a Ripper-style S-Expression"
         end
+        sexp = SexpArray.new(sexp) unless sexp.is_a? SexpArray
         res = Sorcerer::Resource.new(handler_class)
         arity = handler_class.instance_method(method).arity
         if arity == 1
@@ -81,7 +82,8 @@ module Sorcerer
     PASS2 = lambda { |sexp| resource(sexp[2]) }
     EMIT1 = lambda { |sexp| emit(sexp[1]) }
     HANDLERS = {}
-
+   
+   
     def initialize(res_object)
       @resource_obj = res_object
       self.class.constants.each do |p|

@@ -16,11 +16,11 @@ module Sorcerer
 
     def detect_chained_call(sexp)
       source_watch do |string,sexp|
-        debugger
-        1
-        if resource_obj.current_expression =~ [:brace_block]
-          debugger
-          1
+        if sexp =~ [:brace_block]
+          if sexp.parent.parent =~ [:call, *SexpArray::Anything, :"."]
+            string.replace(Sorcerer.source(sexp))
+            throw :next_expression, sexp.parent.parent
+          end
         end
       end
       transfigure_braces(sexp)
@@ -46,15 +46,20 @@ module Sorcerer
     end
     teach_spell :macro_sub
 
-    handlers do |h|
-      h.merge({
-        [:ident, "macro_expand"] => lambda { |sexp|
-          emit <<-NEWSOURCE
-            lambda { puts "I am an expanded macro." (1..5).to_a }.call
-          NEWSOURCE
-        }
-      })
-    end
+    HANDLERS = {
+      [:ident, "macro_expand"] => lambda { |sexp|
+        emit "lambda { puts 'I am an expanded macro' (1..5).to_a }.call"
+      }
+    }
+    #handlers do |h|
+    #  h.merge({
+    #    [:ident, "macro_expand"] => lambda { |sexp|
+    #      emit <<-NEWSOURCE
+    #        lambda { puts "I am an expanded macro." (1..5).to_a }.call
+    #      NEWSOURCE
+    #    }
+    #  })
+    #end
   end
 end
       
@@ -88,12 +93,9 @@ SRC
     assert_equal(Sorcerer.transfigure_braces(to_sexp(trans_source), :tnl), source)
   end
 
-  def test_chained_spells
+  def test_replace_sexp_area
     source = "foo { |m| bar }.collect { |i| i }.max { |c| c}"
     trans_source = "foo { |m| bar }.collect { |i| i }.max do |c|\n  c\nend"
-    debugger
-    1
-
     assert_equal(Sorcerer.detect_chained_call(to_sexp(source)), trans_source)
   end
 

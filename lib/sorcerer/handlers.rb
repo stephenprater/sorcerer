@@ -2,10 +2,10 @@ require 'ruby-debug'
 
 module Sorcerer
   class Source < HandlerClass  
-    def source(sexp, debug)
+    def source(sexp, debug = false)
       resource_obj.instance_eval do
         @debug = true
-      end
+      end if debug
       resource(sexp)
     end
     teach_spell :source

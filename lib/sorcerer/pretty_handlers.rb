@@ -30,6 +30,7 @@ module Sorcerer
     BREAKABLE_PATTERNS = [/(\{\s(\|.+?\|)*)/,/&&/,/\|\|/,/,/,/\+/] 
     
     def intelligent_break string
+      debugger unless string
       (@since_last_nl = 0 and return) if string == "\n"
       @since_last_nl += string.length
 
